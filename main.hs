@@ -31,9 +31,9 @@ getPositions y width = (getPositions (y-1) width) ++ (getRowPositions y width)
 
 flag :: Position -> VisibleBoard -> VisibleBoard
 flag (0,y) x:xs = flagrow y x
-flag (x,y) x:xs = x : flag (x-1,y) xs
+flag (x,y) b:bs = b : flag (x-1,y) bs
 
-flagrow :: int -> VisibleBoard -> VisibleBoard
+flagrow :: int -> Row -> Row
 flagrow 0 _ = 'F'
 flagrow y x:xs = x: flag y-1 xs
 
