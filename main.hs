@@ -34,22 +34,7 @@ flagRow 0 (r:rs) = 'F' : rs
 flagRow y (r:rs) = r : (flagRow (y-1) rs)
 
 flag :: Position -> VisibleBoard -> VisibleBoard
-<<<<<<< HEAD
 flag (0,y) (b:bs) = (flagRow y b) : bs
 flag (x,y) (b:bs) = b : (flag (x-1,y) bs)
-
-
-
-
-
-
-=======
-flag (0,y) x:xs = flagrow y x
-flag (x,y) b:bs = b : flag (x-1,y) bs
-
-flagrow :: int -> Row -> Row
-flagrow 0 _ = 'F'
-flagrow y x:xs = x: flag y-1 xs
->>>>>>> origin/master
 
 
