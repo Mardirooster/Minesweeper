@@ -1,6 +1,6 @@
 -- file: Minesweeper/main.hs
 
-import Data.Random
+import System.Random
 
 type Row = [Char]
 type Board = [Row]
@@ -91,6 +91,7 @@ countMinesSurrounding :: Position -> Size -> Board -> Int
 countMinesSurrounding position size board = countMines minepositions board
     where minepositions = getSizeFilteredSurroundingPositions position size
 
-mySample :: StdGen -> Int -> [a] -> [a]
-mySample g n xs = evalState (runRVar (sample n xs) StdRandom) g
+
+rollDice :: IO Int
+rollDice = getStdRandom (randomR (1,6))
 
