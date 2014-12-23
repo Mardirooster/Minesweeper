@@ -1,6 +1,10 @@
 -- file: Minesweeper/main.hs
 
+module Minesweeper where
+
 import System.Random
+import Data.List
+import Data.Char
 
 type Row = [Char]
 type Board = [Row]
@@ -15,17 +19,34 @@ mine = 'X'
 width = 5
 height = 5
 
+lastof :: [a] -> [a]
+lastof [] = []
+lastof xs = [last xs]
+
+initof :: [a] -> [a]
+initof [] = []
+initof xs = init xs
+
+
+shuffle' :: [Int] -> [a]  -> Int -> [a]
+shuffle' _ xs 0 = xs
+shuffle' (i:is) xs len = let (firsts, rest) = splitAt ((i `mod` (length xs))) xs
+                     in (lastof firsts) ++ shuffle' is (initof firsts ++ rest) (len-1)
+
+shuffle :: StdGen -> [a] -> [a]
+shuffle g xs = shuffle' (randoms g) xs (length xs) 
+
 testboard = [['O','-','O','-','O'],['-','-','-','-','O'],['O','-','-','-','-'],['O','-','-','-','O'],['O','-','O','-','O']]
 testplayer = [['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#']]
 -- width -> row, empty char is space 
-row :: Int -> Row
-row 0 = []
-row x = ' ':(row (x-1))
+row :: Int -> Char -> Row
+row 0 _ = []
+row x char = char:(row (x-1) char)
 
 -- height width -> board
-board :: Int -> Int -> Board
-board 0 _ = []
-board h w = (row w) : (board (h-1) w)
+board :: Int -> Int -> Char -> Board
+board 0 _ _ = []
+board h w char = (row w char) : (board (h-1) w char)
 
 -- row number, position 
 getRowPositions :: Int -> Int -> [Position]
@@ -92,6 +113,49 @@ countMinesSurrounding position size board = countMines minepositions board
     where minepositions = getSizeFilteredSurroundingPositions position size
 
 
+--genBoard :: StdGen -> Size -> Int -> Board -> Board
+
+
+minePositions :: StdGen -> Size -> Int -> [Position]
+minePositions gen (h,w) mines = let shuffledposition = shuffle gen (getPositions h w)
+                                in take mines shuffledposition
+
+rowNumbers :: Board -> Row -> Int -> Int -> Size -> Row
+rowNumbers _ [] _ _ _ = []
+rowNumbers board (r:rs) currx curry size = 
+    if r /= 'X'
+        then intToDigit (countMinesSurrounding (currx,curry) size board) : (rowNumbers board rs currx (curry+1) size)
+        else r : (rowNumbers board rs currx (curry+1) size)
+
+rowIterNumbers :: Board -> Board -> Int -> Size -> Board
+rowIterNumbers _ [] _ _ = []
+rowIterNumbers board (b:bs) currx size = (rowNumbers board b currx 0 size) : (rowIterNumbers board bs (currx+1) size) 
+
+setNumbers :: Board -> Size -> HiddenBoard
+setNumbers b (x,y) = rowIterNumbers b b 0 (x,y)
+
+
+
 rollDice :: IO Int
 rollDice = getStdRandom (randomR (1,6))
 
+
+printBoard :: Board -> String
+printBoard [] = "\n"
+printBoard (b:bs) = b ++ "\n" ++ printBoard bs
+
+--revealSpot :: 
+
+
+main :: IO()
+main = do
+    randgen <- newStdGen
+    let emptyboard = board 10 10 '-'
+    let positions = minePositions randgen (10,10) 10
+    let minedboard = setPositions 'X' positions emptyboard
+    let hiddenboard = setNumbers minedboard (10,10)
+    let playerboard = board 10 10 '#'
+
+    --print minedboard
+    putStrLn $ printBoard hiddenboard
+    putStrLn $ printBoard playerboard
