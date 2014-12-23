@@ -5,6 +5,7 @@ module Minesweeper where
 import System.Random
 import Data.List
 import Data.Char
+import Data.Text
 
 type Row = [Char]
 type Board = [Row]
@@ -19,7 +20,6 @@ mine = 'X'
 width = 5
 height = 5
 
-<<<<<<< HEAD
 lastof :: [a] -> [a]
 lastof [] = []
 lastof xs = [last xs]
@@ -37,6 +37,8 @@ shuffle' (i:is) xs len = let (firsts, rest) = splitAt ((i `mod` (length xs))) xs
 shuffle :: StdGen -> [a] -> [a]
 shuffle g xs = shuffle' (randoms g) xs (length xs) 
 
+
+-- initialising functions, create board filled with a character
 -- width -> row, empty char is space 
 row :: Int -> Char -> Row
 row 0 _ = []
@@ -143,19 +145,52 @@ printBoard :: Board -> String
 printBoard [] = "\n"
 printBoard (b:bs) = b ++ "\n" ++ printBoard bs
 
---revealSpot :: 
+revealSpot ::  HiddenBoard -> [Position] -> [Position] -> VisibleBoard -> Size-> VisibleBoard
+revealSpot hiddenboard [] traversed board size = board
+revealSpot hiddenboard (p:ps) traversed board size = 
+    if spot == '0'
+        then revealSpot hiddenboard toreveal (p:traversed) (setPosition '-' p board) size
+        else revealSpot hiddenboard ps (p:traversed) (setPosition spot p board) size
+        where
+            spot = peekPosition p hiddenboard
+            toreveal = union ps minustraversed
+                where minustraversed = deleteFirstsBy (==) (getSizeFilteredSurroundingPositions p size) traversed
+
+cleanUserInput :: Size -> IO [[Char]]
+cleanUserInput (x,y) = do
+    input <- getLine
+
+    let splitline = splitOn " " input
+
+    if length splitline < 3
+        then 
+            putStrLn "2 short shawty try agan"
+            cleanUserInput (x,y)
+        else if (((splitline !! 1) :: Int) < x) && (((splitline !! 2 ) :: Int) < y)
+            then return splitline
+            else
+                putStrLn "way outa bounds son"
+                cleanUserInput (x,y)
+
+game :: HiddenBoard -> VisibleBoard -> Size -> String
+game hiddenboard visibleboard size = do
+    putStrLn "don hate tha playa"
+    putStrLn "mak yo move"
 
 
 main :: IO()
 main = do
     randgen <- newStdGen
     let emptyboard = board 10 10 '-'
-    let positions = minePositions randgen (10,10) 10
+    let size = (10,10)
+    let positions = minePositions randgen size 10
     let minedboard = setPositions 'X' positions emptyboard
-    let hiddenboard = setNumbers minedboard (10,10)
+    let hiddenboard = setNumbers minedboard size
     let playerboard = board 10 10 '#'
+
+
 
     --print minedboard
     putStrLn $ printBoard hiddenboard
     putStrLn $ printBoard playerboard
-    
+    putStrLn $ printBoard $ revealSpot hiddenboard [(4,4)] [] playerboard size
