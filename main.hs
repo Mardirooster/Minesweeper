@@ -108,18 +108,18 @@ filterPositions (sx,sy) ((x,y):ps) =
 getSizeFilteredSurroundingPositions :: Position -> Size -> [Position]
 getSizeFilteredSurroundingPositions position size = filterPositions size (getSurroundingPositions position)
 
-countMines :: [Position] -> Board -> Int
-countMines [] _ = 0
-countMines (p:ps) board = 
-    if char == mine
-        then 1 + countMines ps board
-        else countMines ps board
+countChars :: [Position] -> Char -> Board -> Int
+countChars [] _ _ = 0
+countChars (p:ps) character board = 
+    if char == character
+        then 1 + countChars ps character board
+        else countChars ps character board
     where char = peekPosition p board
 
 
-countMinesSurrounding :: Position -> Size -> Board -> Int
-countMinesSurrounding position size board = countMines minepositions board
-    where minepositions = getSizeFilteredSurroundingPositions position size
+countCharsSurrounding :: Position -> Char -> Size -> Board -> Int
+countCharsSurrounding position char size board = countChars charpositions char board
+    where charpositions = getSizeFilteredSurroundingPositions position size
 
 
 --genBoard :: StdGen -> Size -> Int -> Board -> Board
@@ -133,7 +133,7 @@ rowNumbers :: Board -> Row -> Int -> Int -> Size -> Row
 rowNumbers _ [] _ _ _ = []
 rowNumbers board (r:rs) currx curry size = 
     if r /= 'X'
-        then intToDigit (countMinesSurrounding (currx,curry) size board) : (rowNumbers board rs currx (curry+1) size)
+        then intToDigit (countCharsSurrounding (currx,curry) 'X' size board) : (rowNumbers board rs currx (curry+1) size)
         else r : (rowNumbers board rs currx (curry+1) size)
 
 rowIterNumbers :: Board -> Board -> Int -> Size -> Board
@@ -227,6 +227,13 @@ game hiddenboard visibleboard size = do
     --if movetype == "demine"
     --    then revealSpot hiddenboard [((input !! 1) :: Int), ((input !! 2) :: Int)] [] visibleboard size
     --    else return "fk u dis ain't done yet"
+
+
+--findSafeMoves :: Position -> VisibleBoard -> Size -> [Position]
+--findSafeMoves position board size =
+
+--autoMove :: VisibleBoard -> Size -> VisibleBoard
+--autoMove board size = 
 
 
 
