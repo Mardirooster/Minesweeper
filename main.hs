@@ -12,22 +12,20 @@ type Size = (Int, Int)
 
 mine = 'X'
 
+width = 5
+height = 5
 
+testboard = [['O','-','O','-','O'],['-','-','-','-','O'],['O','-','-','-','-'],['O','-','-','-','O'],['O','-','O','-','O']]
+testplayer = [['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#']]
 -- width -> row, empty char is space 
 row :: Int -> Row
 row 0 = []
 row x = ' ':(row (x-1))
 
-
 -- height width -> board
 board :: Int -> Int -> Board
 board 0 _ = []
 board h w = (row w) : (board (h-1) w)
-
-
-
-getMinePositions :: [Position] -> []
-
 
 -- row number, position 
 getRowPositions :: Int -> Int -> [Position]
