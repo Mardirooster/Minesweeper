@@ -2,10 +2,18 @@
 
 module Minesweeper where
 
+--import System.Random
+--import Data.List
+--import Data.Char
+--import Data.Text (splitOn)
+
 import System.Random
-import Data.List
+import Data.Array.IArray
 import Data.Char
-import Data.Text
+import Data.List.Split
+import Data.Function (on)
+import Data.List --(sortBy, groupBy) 
+import Test.QuickCheck
 
 type Row = [Char]
 type Board = [Row]
@@ -145,6 +153,21 @@ printBoard :: Board -> String
 printBoard [] = "\n"
 printBoard (b:bs) = b ++ "\n" ++ printBoard bs
 
+lost :: VisibleBoard -> Bool
+lost [] = False
+lost (b:bs) = elem 'X' b || (lost bs)
+
+rowWon :: Row -> Row -> Bool
+rowWon [] [] = True
+rowWon (v:vs) (h:hs) = 
+    if (v == '#' && h /= 'X')
+        then False
+        else rowWon vs hs
+
+won :: VisibleBoard -> HiddenBoard -> Bool
+won [] [] = True
+won (v:vs) (h:hs) = (rowWon v h) && (won vs hs)
+
 revealSpot ::  HiddenBoard -> [Position] -> [Position] -> VisibleBoard -> Size-> VisibleBoard
 revealSpot hiddenboard [] traversed board size = board
 revealSpot hiddenboard (p:ps) traversed board size = 
@@ -157,25 +180,55 @@ revealSpot hiddenboard (p:ps) traversed board size =
                 where minustraversed = deleteFirstsBy (==) (getSizeFilteredSurroundingPositions p size) traversed
 
 cleanUserInput :: Size -> IO [[Char]]
-cleanUserInput (x,y) = do
+cleanUserInput size = do
     input <- getLine
 
-    let splitline = splitOn " " input
+    let splitinput = splitOn " " input
 
-    if length splitline < 3
-        then 
+    let (maxx, maxy) = size
+    let x = read (splitinput !! 1)
+    let y = read (splitinput !! 2)
+    if length splitinput < 3
+        then do
             putStrLn "2 short shawty try agan"
-            cleanUserInput (x,y)
-        else if (((splitline !! 1) :: Int) < x) && (((splitline !! 2 ) :: Int) < y)
-            then return splitline
-            else
-                putStrLn "way outa bounds son"
-                cleanUserInput (x,y)
+            cleanUserInput size
+        else if (x > (maxx-1) || x < 0 || y > (maxy-1) || y < 0) 
+            then do 
+                putStrLn "way outa bounds"
+                cleanUserInput size
+            else return splitinput
 
-game :: HiddenBoard -> VisibleBoard -> Size -> String
+
+game :: HiddenBoard -> VisibleBoard -> Size -> IO [Char]
 game hiddenboard visibleboard size = do
-    putStrLn "don hate tha playa"
+    putStrLn $ printBoard visibleboard
+    putStrLn "\ndon hate tha playa"
     putStrLn "mak yo move"
+    putStrLn "demine to deal with tha real shit"
+    putStrLn "fleg if ur a fkn wimp"
+
+    input <- cleanUserInput size
+
+    let movetype = input !! 0
+--    let (maxx, maxy) = size
+    let x = read (input !! 1)
+    let y = read (input !! 2)
+--    if (x < maxx && x >= 0 && y < maxy && y >= 0)
+    let position = (x,y)
+    let newboard = revealSpot hiddenboard [position] [] visibleboard size
+
+    if (lost newboard)
+        then return "we fukning losst"
+        else if (won newboard hiddenboard)
+            then do
+                putStrLn $ printBoard newboard
+                return "con fuckn gratys u can play minwseppep"
+            else game hiddenboard newboard size
+    --if movetype == "demine"
+    --    then revealSpot hiddenboard [((input !! 1) :: Int), ((input !! 2) :: Int)] [] visibleboard size
+    --    else return "fk u dis ain't done yet"
+
+
 
 
 main :: IO()
@@ -183,14 +236,16 @@ main = do
     randgen <- newStdGen
     let emptyboard = board 10 10 '-'
     let size = (10,10)
-    let positions = minePositions randgen size 10
+    let positions = minePositions randgen size 1
     let minedboard = setPositions 'X' positions emptyboard
     let hiddenboard = setNumbers minedboard size
     let playerboard = board 10 10 '#'
 
 
+    gameresult <- game hiddenboard playerboard size
+    putStrLn gameresult
 
     --print minedboard
-    putStrLn $ printBoard hiddenboard
-    putStrLn $ printBoard playerboard
-    putStrLn $ printBoard $ revealSpot hiddenboard [(4,4)] [] playerboard size
+    --putStrLn $ printBoard hiddenboard
+    --putStrLn $ printBoard playerboard
+    --putStrLn $ printBoard $ revealSpot hiddenboard [(4,4)] [] playerboard size
