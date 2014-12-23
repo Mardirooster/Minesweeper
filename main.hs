@@ -19,6 +19,7 @@ mine = 'X'
 width = 5
 height = 5
 
+<<<<<<< HEAD
 lastof :: [a] -> [a]
 lastof [] = []
 lastof xs = [last xs]
@@ -36,8 +37,6 @@ shuffle' (i:is) xs len = let (firsts, rest) = splitAt ((i `mod` (length xs))) xs
 shuffle :: StdGen -> [a] -> [a]
 shuffle g xs = shuffle' (randoms g) xs (length xs) 
 
-testboard = [['O','-','O','-','O'],['-','-','-','-','O'],['O','-','-','-','-'],['O','-','-','-','O'],['O','-','O','-','O']]
-testplayer = [['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#'],['#','#','#','#','#']]
 -- width -> row, empty char is space 
 row :: Int -> Char -> Row
 row 0 _ = []
@@ -159,3 +158,4 @@ main = do
     --print minedboard
     putStrLn $ printBoard hiddenboard
     putStrLn $ printBoard playerboard
+    
