@@ -12,8 +12,7 @@ import Data.Array.IArray
 import Data.Char
 import Data.List.Split
 import Data.Function (on)
-import Data.List --(sortBy, groupBy) 
-import Test.QuickCheck
+import Data.List
 
 type Row = [Char]
 type Board = [Row]
@@ -53,9 +52,9 @@ row 0 _ = []
 row x char = char:(row (x-1) char)
 
 -- height width -> board
-board :: Int -> Int -> Char -> Board
-board 0 _ _ = []
-board h w char = (row w char) : (board (h-1) w char)
+board :: Size -> Char -> Board
+board (0,_) _ = []
+board (h,w) char = (row w char) : (board (h-1,w) char)
 
 -- row number, position 
 getRowPositions :: Int -> Int -> [Position]
@@ -105,19 +104,27 @@ filterPositions (sx,sy) ((x,y):ps) =
         then (x,y) : (filterPositions (sx,sy) ps)
         else filterPositions (sx,sy) ps
 
+
+characterFilterPositions :: Board -> [Char] -> [Position] -> [Position]
+characterFilterPositions board char (p:ps) = 
+    if elem (peekPosition p board) char
+        then p : characterFilterPositions board char ps
+        else characterFilterPositions board char ps
+
+
 getSizeFilteredSurroundingPositions :: Position -> Size -> [Position]
 getSizeFilteredSurroundingPositions position size = filterPositions size (getSurroundingPositions position)
 
-countChars :: [Position] -> Char -> Board -> Int
+countChars :: [Position] -> [Char] -> Board -> Int
 countChars [] _ _ = 0
 countChars (p:ps) character board = 
-    if char == character
+    if elem char character
         then 1 + countChars ps character board
         else countChars ps character board
     where char = peekPosition p board
 
 
-countCharsSurrounding :: Position -> Char -> Size -> Board -> Int
+countCharsSurrounding :: Position -> [Char] -> Size -> Board -> Int
 countCharsSurrounding position char size board = countChars charpositions char board
     where charpositions = getSizeFilteredSurroundingPositions position size
 
@@ -133,7 +140,7 @@ rowNumbers :: Board -> Row -> Int -> Int -> Size -> Row
 rowNumbers _ [] _ _ _ = []
 rowNumbers board (r:rs) currx curry size = 
     if r /= 'X'
-        then intToDigit (countCharsSurrounding (currx,curry) 'X' size board) : (rowNumbers board rs currx (curry+1) size)
+        then intToDigit (countCharsSurrounding (currx,curry) ['X'] size board) : (rowNumbers board rs currx (curry+1) size)
         else r : (rowNumbers board rs currx (curry+1) size)
 
 rowIterNumbers :: Board -> Board -> Int -> Size -> Board
@@ -188,9 +195,9 @@ cleanUserInput size = do
     let (maxx, maxy) = size
     let x = read (splitinput !! 1)
     let y = read (splitinput !! 2)
-    if length splitinput < 3
+    if length splitinput > 3
         then do
-            putStrLn "2 short shawty try agan"
+            putStrLn "2 long shawty try agan"
             cleanUserInput size
         else if (x > (maxx-1) || x < 0 || y > (maxy-1) || y < 0) 
             then do 
@@ -198,6 +205,14 @@ cleanUserInput size = do
                 cleanUserInput size
             else return splitinput
 
+makeMove :: HiddenBoard -> VisibleBoard -> Size -> Position -> String -> VisibleBoard
+makeMove hiddenboard visibleboard size position movetype =
+    if movetype == "fleg"
+        then
+            flag position visibleboard
+        else if movetype == "demine"
+            then revealSpot hiddenboard [position] [] visibleboard size
+            else autoMove hiddenboard visibleboard size
 
 game :: HiddenBoard -> VisibleBoard -> Size -> IO [Char]
 game hiddenboard visibleboard size = do
@@ -205,7 +220,7 @@ game hiddenboard visibleboard size = do
     putStrLn "\ndon hate tha playa"
     putStrLn "mak yo move"
     putStrLn "demine to deal with tha real shit"
-    putStrLn "fleg if ur a fkn wimp"
+    putStrLn "fleg if ur a fkn wimp\n"
 
     input <- cleanUserInput size
 
@@ -215,7 +230,8 @@ game hiddenboard visibleboard size = do
     let y = read (input !! 2)
 --    if (x < maxx && x >= 0 && y < maxy && y >= 0)
     let position = (x,y)
-    let newboard = revealSpot hiddenboard [position] [] visibleboard size
+
+    let newboard = makeMove hiddenboard visibleboard size (x,y) movetype
 
     if (lost newboard)
         then return "we fukning losst"
@@ -228,25 +244,35 @@ game hiddenboard visibleboard size = do
     --    then revealSpot hiddenboard [((input !! 1) :: Int), ((input !! 2) :: Int)] [] visibleboard size
     --    else return "fk u dis ain't done yet"
 
+flagall :: [Position] -> VisibleBoard -> VisibleBoard
+flagall [] board = board
+flagall (p:ps) board = flagall ps (flag p board)
 
---findSafeMoves :: Position -> VisibleBoard -> Size -> [Position]
---findSafeMoves position board size =
+findBasicSafeMoves :: [Position] -> VisibleBoard -> Size -> [Position]
+findBasicSafeMoves [] _ _ = []
+findBasicSafeMoves (p:ps) board size =
+    if (countCharsSurrounding p ['#', 'F'] size board) == digitToInt (peekPosition p board)
+        then characterFilterPositions board ['#', 'F'] (getSizeFilteredSurroundingPositions p size) `union` findBasicSafeMoves ps board size
+        else findBasicSafeMoves ps board size
 
---autoMove :: VisibleBoard -> Size -> VisibleBoard
---autoMove board size = 
+autoMove :: HiddenBoard -> VisibleBoard -> Size -> VisibleBoard
+autoMove hiddenboard visibleboard (x,y) = revealSpot hiddenboard (lastof moves) [] visibleboard (x,y)
+    where moves = findBasicSafeMoves (getPositions x y) visibleboard (x,y)
 
 
 
 
 main :: IO()
 main = do
+
+
     randgen <- newStdGen
-    let emptyboard = board 10 10 '-'
+    let emptyboard = board (10,10) '-'
     let size = (10,10)
     let positions = minePositions randgen size 1
     let minedboard = setPositions 'X' positions emptyboard
     let hiddenboard = setNumbers minedboard size
-    let playerboard = board 10 10 '#'
+    let playerboard = board (10,10) '#'
 
 
     gameresult <- game hiddenboard playerboard size
